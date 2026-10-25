@@ -58,9 +58,10 @@ graph TB
    - *Conflict Detection:* Flags competing or contradictory passages.
    - *Automated Abstention:* Returns explicit `INSUFFICIENT_EVIDENCE` when confidence $< 0.40$.
 3. **Contract Redline & Risk Flagging:** Side-by-side comparison of contract drafts detecting added, removed, and modified clauses with materiality scoring (`HIGH`, `MEDIUM`, `LOW`) and counsel rationale notes.
-4. **9-Category Clause & Obligation Intelligence:** Automated extraction of Parties, Effective Dates, Payment Terms, Renewal Conditions, Confidentiality, Indemnification, Liability Caps, Governing Law, and Termination Rights.
-5. **Human-in-the-Loop Review Queue:** Automatic routing of outputs with confidence $< 0.85$ or conflicting claims for partner sign-off with immutable audit logs.
-6. **Evaluation & Observability Engine:** Standardized retrieval benchmarks (Recall@K, MRR, nDCG), answer quality scores (faithfulness, citation precision, abstention accuracy), and baseline regression gates.
+4. **Clause Risk Remediation & Fallback Playbook:** Automated legal exposure diagnosis for high-risk counterparty clauses (uncapped liabilities, broad indemnities, one-sided termination) with instantaneous generation of institutional redlines, fallback compromise positions, and counsel talking points across custom negotiation postures (`BALANCED`, `PROTECTIVE_CLIENT`, `AGGRESSIVE_DEFENSE`).
+5. **9-Category Clause & Obligation Intelligence:** Automated extraction of Parties, Effective Dates, Payment Terms, Renewal Conditions, Confidentiality, Indemnification, Liability Caps, Governing Law, and Termination Rights.
+6. **Human-in-the-Loop Review Queue:** Automatic routing of outputs with confidence $< 0.85$ or conflicting claims for partner sign-off with immutable audit logs.
+7. **Evaluation & Observability Engine:** Standardized retrieval benchmarks (Recall@K, MRR, nDCG), answer quality scores (faithfulness, citation precision, abstention accuracy), and baseline regression gates.
 
 ---
 

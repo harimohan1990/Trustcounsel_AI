@@ -73,8 +73,8 @@ async def compare_contracts(
 class RemediateClauseRequest(BaseModel):
     clause_type: str
     original_text: str
-    risk_level: Optional[str] = "HIGH"
-    negotiation_stance: Optional[str] = "BALANCED"
+    risk_level: str | None = "HIGH"
+    negotiation_stance: str | None = "BALANCED"
 
 
 @router.post("/remediate-clause")

@@ -245,7 +245,6 @@ class ContractIntelligence:
         playbook redlines with fallback compromises and negotiation strategy.
         """
         clean_type = clause_type.lower()
-        clean_text = original_text.lower()
 
         if "liability" in clean_type or "cap" in clean_type:
             diagnosis = "The clause expands liability beyond customary bounds or introduces uncapped indemnity exceptions, exposing the company to existential damages beyond contract value."
@@ -304,12 +303,22 @@ class ContractIntelligence:
             fallback = "Standard bilateral arbitration under AAA Commercial Rules in a neutral forum."
             rationale = "Ambiguous terms should be redlined to establish reciprocal rights and minimize forum shopping risks."
 
+        talking_points = [
+            rationale,
+            f"Adheres to enterprise firm standard: {playbook_rule}.",
+            f"Maintains risk parity under {negotiation_stance.replace('_', ' ').title()} legal posture.",
+            "Precludes asymmetric legal or financial exposure during enforcement.",
+        ]
+
         return {
             "clause_type": clause_type,
             "risk_diagnosis": diagnosis,
+            "risk_level": risk_level,
             "proposed_redline": redline,
             "fallback_option": fallback,
+            "fallback_compromise": fallback,
             "negotiation_rationale": rationale,
+            "negotiation_talking_points": talking_points,
             "playbook_rule": playbook_rule,
             "negotiation_stance": negotiation_stance,
         }
