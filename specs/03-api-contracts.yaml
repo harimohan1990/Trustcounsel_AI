@@ -1,0 +1,1187 @@
+openapi: 3.1.0
+info:
+  title: TrustCounsel AI REST API
+  description: Enterprise Legal Research & Document Intelligence Platform API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local Development Server
+
+security:
+  - BearerAuth: []
+
+paths:
+  # ================= AUTHENTICATION =================
+  /auth/register:
+    post:
+      summary: Register a new user and initialize a default workspace
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+
+  /auth/login:
+    post:
+      summary: Authenticate user credentials and return JWT tokens
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successfully authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/logout:
+    post:
+      summary: Invalidate the current session and refresh token
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /auth/me:
+    get:
+      summary: Get details of the currently authenticated user
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ================= DOCUMENTS =================
+  /documents:
+    get:
+      summary: List documents in active workspace
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [UPLOADED, PROCESSING, INDEXED, FAILED]
+      responses:
+        '200':
+          description: Paginated list of documents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentListResponse'
+    post:
+      summary: Upload a new legal document (PDF or TXT)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                title:
+                  type: string
+                classification:
+                  type: string
+                  default: GENERAL_CONTRACT
+      responses:
+        '202':
+          description: Document uploaded and ingestion queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+
+  /documents/{document_id}:
+    get:
+      summary: Get document details and extracted metadata
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Document details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    delete:
+      summary: Delete document and cascade delete all chunks and vectors
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Document deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /documents/{document_id}/status:
+    get:
+      summary: Get document processing status
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Processing status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentStatusResponse'
+
+  # ================= RESEARCH =================
+  /research:
+    post:
+      summary: Submit a legal research query to the LangGraph research agent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResearchRequest'
+      responses:
+        '200':
+          description: Verified research response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+
+  /research/{run_id}:
+    get:
+      summary: Get research run status and full step trace
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResearchRunDetailResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /research/sessions:
+    get:
+      summary: List research sessions for active workspace
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionListResponse'
+
+  /research/sessions/{session_id}:
+    get:
+      summary: Get research session messages and history
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionDetailResponse'
+
+  # ================= DOCUMENT ANALYSIS =================
+  /analysis/summarize:
+    post:
+      summary: Generate structured executive summary of a document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SummarizeRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SummaryResponse'
+
+  /analysis/extract-clauses:
+    post:
+      summary: Extract core legal clauses from a document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtractClausesRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClausesResponse'
+
+  /analysis/extract-obligations:
+    post:
+      summary: Extract contractual obligations and deadlines
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtractObligationsRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObligationsResponse'
+
+  /analysis/compare:
+    post:
+      summary: Semantic side-by-side contract comparison (Version A vs Version B)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompareContractsRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompareContractsResponse'
+
+  # ================= TRUST & VERIFICATION =================
+  /verification/check:
+    post:
+      summary: Run independent trust verification on an answer and citations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationCheckRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationResultResponse'
+
+  # ================= HUMAN REVIEW =================
+  /reviews:
+    get:
+      summary: List pending and completed human review tasks
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, APPROVED, REJECTED, REVISION_REQUESTED]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewTaskListResponse'
+
+  /reviews/{review_id}:
+    get:
+      summary: Get details of a specific review task
+      parameters:
+        - name: review_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewTaskDetailResponse'
+
+  /reviews/{review_id}/decision:
+    post:
+      summary: Submit human reviewer decision (Approve, Reject, Request Revision)
+      parameters:
+        - name: review_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewDecisionRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  # ================= EVALUATION & OBSERVABILITY =================
+  /evaluations/runs:
+    get:
+      summary: List evaluation benchmark runs
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationRunListResponse'
+    post:
+      summary: Trigger a repeatable evaluation benchmark run
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TriggerEvaluationRequest'
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationRunSummary'
+
+  /evaluations/runs/{run_id}:
+    get:
+      summary: Get detailed evaluation metrics and report
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationRunDetailResponse'
+
+  /evaluations/compare:
+    get:
+      summary: Compare an evaluation run against a baseline run
+      parameters:
+        - name: baseline_run_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: target_run_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationComparisonResponse'
+
+  # ================= SYSTEM HEALTH & METRICS =================
+  /health:
+    get:
+      summary: Service liveness probe
+      security: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /ready:
+    get:
+      summary: Service readiness probe (checks DB, Redis, Model Provider)
+      security: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadyResponse'
+        '503':
+          description: Service unready
+
+  /metrics:
+    get:
+      summary: Operational metrics (latency, token consumption, error counts)
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationalMetricsResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [email, password, full_name, workspace_name]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        full_name:
+          type: string
+        workspace_name:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [access_token, token_type, user]
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          example: bearer
+        user:
+          $ref: '#/components/schemas/UserResponse'
+
+    UserResponse:
+      type: object
+      required: [id, email, full_name, role, workspace_id]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        full_name:
+          type: string
+        role:
+          type: string
+          enum: [ADMINISTRATOR, RESEARCHER, REVIEWER]
+        workspace_id:
+          type: string
+          format: uuid
+
+    DocumentResponse:
+      type: object
+      required: [id, workspace_id, filename, file_size, content_hash, status, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        file_size:
+          type: integer
+        content_hash:
+          type: string
+        page_count:
+          type: integer
+        status:
+          type: string
+          enum: [UPLOADED, PROCESSING, INDEXED, FAILED]
+        error_message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    DocumentStatusResponse:
+      type: object
+      required: [id, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [UPLOADED, PROCESSING, INDEXED, FAILED]
+        chunk_count:
+          type: integer
+        error_message:
+          type: string
+
+    DocumentListResponse:
+      type: object
+      required: [items, total, page, limit]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentResponse'
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    ResearchRequest:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+        session_id:
+          type: string
+          format: uuid
+        document_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    ResearchResponse:
+      type: object
+      required: [run_id, answer, claims, citations, limitations, confidence_score, status]
+      properties:
+        run_id:
+          type: string
+          format: uuid
+        session_id:
+          type: string
+          format: uuid
+        answer:
+          type: string
+        claims:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimItem'
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/CitationItem'
+        limitations:
+          type: array
+          items:
+            type: string
+        confidence_score:
+          type: number
+        status:
+          type: string
+          enum: [COMPLETED, ABSTAINED, AWAITING_HUMAN_REVIEW]
+
+    ClaimItem:
+      type: object
+      required: [id, claim_text, status, citation_ids]
+      properties:
+        id:
+          type: string
+        claim_text:
+          type: string
+        status:
+          type: string
+          enum: [VERIFIED, UNSUPPORTED, CONTRADICTED]
+        citation_ids:
+          type: array
+          items:
+            type: string
+
+    CitationItem:
+      type: object
+      required: [id, document_id, document_name, page_number, quote_snippet, verified]
+      properties:
+        id:
+          type: string
+        document_id:
+          type: string
+          format: uuid
+        document_name:
+          type: string
+        page_number:
+          type: integer
+        chunk_id:
+          type: string
+          format: uuid
+        quote_snippet:
+          type: string
+        verified:
+          type: boolean
+
+    ResearchRunDetailResponse:
+      type: object
+      required: [run_id, query, status, answer, steps]
+      properties:
+        run_id:
+          type: string
+          format: uuid
+        query:
+          type: string
+        status:
+          type: string
+        answer:
+          type: string
+        steps:
+          type: array
+          items:
+            type: object
+            properties:
+              step_name:
+                type: string
+              duration_ms:
+                type: number
+              status:
+                type: string
+
+    SessionListResponse:
+      type: object
+      required: [sessions]
+      properties:
+        sessions:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              title:
+                type: string
+              created_at:
+                type: string
+                format: date-time
+
+    SessionDetailResponse:
+      type: object
+      required: [id, title, messages]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        messages:
+          type: array
+          items:
+            type: object
+            properties:
+              role:
+                type: string
+                enum: [user, assistant]
+              content:
+                type: string
+              created_at:
+                type: string
+                format: date-time
+
+    SummarizeRequest:
+      type: object
+      required: [document_id]
+      properties:
+        document_id:
+          type: string
+          format: uuid
+
+    SummaryResponse:
+      type: object
+      required: [document_id, summary, key_terms, citations]
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        summary:
+          type: string
+        key_terms:
+          type: array
+          items:
+            type: string
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/CitationItem'
+
+    ExtractClausesRequest:
+      type: object
+      required: [document_id]
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        clause_types:
+          type: array
+          items:
+            type: string
+
+    ClausesResponse:
+      type: object
+      required: [document_id, clauses]
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        clauses:
+          type: array
+          items:
+            type: object
+            properties:
+              clause_type:
+                type: string
+              clause_text:
+                type: string
+              page_number:
+                type: integer
+              risk_level:
+                type: string
+                enum: [LOW, MEDIUM, HIGH]
+              citation:
+                $ref: '#/components/schemas/CitationItem'
+
+    ExtractObligationsRequest:
+      type: object
+      required: [document_id]
+      properties:
+        document_id:
+          type: string
+          format: uuid
+
+    ObligationsResponse:
+      type: object
+      required: [document_id, obligations]
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        obligations:
+          type: array
+          items:
+            type: object
+            properties:
+              responsible_party:
+                type: string
+              action_required:
+                type: string
+              deadline_or_trigger:
+                type: string
+              citation:
+                $ref: '#/components/schemas/CitationItem'
+
+    CompareContractsRequest:
+      type: object
+      required: [document_a_id, document_b_id]
+      properties:
+        document_a_id:
+          type: string
+          format: uuid
+        document_b_id:
+          type: string
+          format: uuid
+
+    CompareContractsResponse:
+      type: object
+      required: [document_a_id, document_b_id, added_clauses, removed_clauses, modified_clauses]
+      properties:
+        document_a_id:
+          type: string
+          format: uuid
+        document_b_id:
+          type: string
+          format: uuid
+        added_clauses:
+          type: array
+          items:
+            type: object
+        removed_clauses:
+          type: array
+          items:
+            type: object
+        modified_clauses:
+          type: array
+          items:
+            type: object
+            properties:
+              clause_type:
+                type: string
+              text_a:
+                type: string
+              text_b:
+                type: string
+              materiality:
+                type: string
+                enum: [LOW, MEDIUM, HIGH]
+              risk_rationale:
+                type: string
+
+    VerificationCheckRequest:
+      type: object
+      required: [answer_text, citations]
+      properties:
+        answer_text:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/CitationItem'
+
+    VerificationResultResponse:
+      type: object
+      required: [is_verified, confidence_score, verified_citations, unsupported_claims, contradictions]
+      properties:
+        is_verified:
+          type: boolean
+        confidence_score:
+          type: number
+        verified_citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/CitationItem'
+        unsupported_claims:
+          type: array
+          items:
+            type: string
+        contradictions:
+          type: array
+          items:
+            type: string
+
+    ReviewTaskListResponse:
+      type: object
+      required: [tasks]
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewTaskItem'
+
+    ReviewTaskItem:
+      type: object
+      required: [id, run_id, query, reason, status, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        run_id:
+          type: string
+          format: uuid
+        query:
+          type: string
+        reason:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED, REVISION_REQUESTED]
+        created_at:
+          type: string
+          format: date-time
+
+    ReviewTaskDetailResponse:
+      type: object
+      required: [id, run_id, query, draft_answer, claims, citations, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        run_id:
+          type: string
+          format: uuid
+        query:
+          type: string
+        draft_answer:
+          type: string
+        claims:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimItem'
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/CitationItem'
+        status:
+          type: string
+
+    ReviewDecisionRequest:
+      type: object
+      required: [decision, notes]
+      properties:
+        decision:
+          type: string
+          enum: [APPROVED, REJECTED, REVISION_REQUESTED]
+        notes:
+          type: string
+        modified_answer:
+          type: string
+
+    TriggerEvaluationRequest:
+      type: object
+      required: [dataset_name]
+      properties:
+        dataset_name:
+          type: string
+        model_version:
+          type: string
+          default: "mock-v1"
+
+    EvaluationRunSummary:
+      type: object
+      required: [run_id, dataset_name, status]
+      properties:
+        run_id:
+          type: string
+          format: uuid
+        dataset_name:
+          type: string
+        status:
+          type: string
+
+    EvaluationRunListResponse:
+      type: object
+      required: [runs]
+      properties:
+        runs:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvaluationRunSummary'
+
+    EvaluationRunDetailResponse:
+      type: object
+      required: [run_id, dataset_name, metrics, status, created_at]
+      properties:
+        run_id:
+          type: string
+          format: uuid
+        dataset_name:
+          type: string
+        status:
+          type: string
+        metrics:
+          type: object
+          properties:
+            recall_at_k:
+              type: number
+            precision_at_k:
+              type: number
+            mrr:
+              type: number
+            ndcg:
+              type: number
+            faithfulness_score:
+              type: number
+            citation_precision:
+              type: number
+            abstention_accuracy:
+              type: number
+            p95_latency_ms:
+              type: number
+            total_tokens:
+              type: integer
+            estimated_cost_usd:
+              type: number
+        created_at:
+          type: string
+          format: date-time
+
+    EvaluationComparisonResponse:
+      type: object
+      required: [baseline_run_id, target_run_id, deltas]
+      properties:
+        baseline_run_id:
+          type: string
+          format: uuid
+        target_run_id:
+          type: string
+          format: uuid
+        deltas:
+          type: object
+          properties:
+            recall_delta:
+              type: number
+            faithfulness_delta:
+              type: number
+            latency_delta_ms:
+              type: number
+            cost_delta_usd:
+              type: number
+
+    HealthResponse:
+      type: object
+      required: [status, timestamp]
+      properties:
+        status:
+          type: string
+          example: healthy
+        timestamp:
+          type: string
+          format: date-time
+
+    ReadyResponse:
+      type: object
+      required: [status, database, redis, model_provider]
+      properties:
+        status:
+          type: string
+          example: ready
+        database:
+          type: string
+          example: connected
+        redis:
+          type: string
+          example: connected
+        model_provider:
+          type: string
+          example: mock_active
+
+    OperationalMetricsResponse:
+      type: object
+      required: [total_requests, p50_latency_ms, p95_latency_ms, error_rate, token_consumption, total_cost_usd]
+      properties:
+        total_requests:
+          type: integer
+        p50_latency_ms:
+          type: number
+        p95_latency_ms:
+          type: number
+        error_rate:
+          type: number
+        token_consumption:
+          type: integer
+        total_cost_usd:
+          type: number
+
+    SuccessResponse:
+      type: object
+      required: [success, message]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required: [error_code, message]
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+  responses:
+    BadRequestError:
+      description: Invalid request parameters or payload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnauthorizedError:
+      description: Authentication token missing, expired, or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ForbiddenError:
+      description: Insufficient workspace permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFoundError:
+      description: Requested entity does not exist or belongs to another workspace
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ConflictError:
+      description: Resource conflict or duplicate key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
