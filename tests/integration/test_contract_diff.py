@@ -53,3 +53,22 @@ async def test_contract_intelligence_and_comparison(client: AsyncClient):
     high_risk = next((c for c in diff_data["modified_clauses"] if c["materiality"] == "HIGH"), None)
     assert high_risk is not None
     assert "liability" in high_risk["clause_type"].lower()
+
+    # 4. Remediate High-Risk Clause
+    rem_res = await client.post(
+        "/api/v1/analysis/remediate-clause",
+        headers=headers,
+        json={
+            "clause_type": "Limitation of Liability",
+            "original_text": high_risk["text_b"],
+            "risk_level": "HIGH",
+            "negotiation_stance": "BALANCED",
+        },
+    )
+    assert rem_res.status_code == 200
+    rem_data = rem_res.json()
+    assert "proposed_redline" in rem_data
+    assert "fallback_option" in rem_data
+    assert "negotiation_rationale" in rem_data
+    assert "playbook_rule" in rem_data
+    assert "Section 4.1 Limitation of Liability" in rem_data["proposed_redline"]

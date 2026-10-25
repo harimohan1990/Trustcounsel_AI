@@ -232,3 +232,85 @@ class ContractIntelligence:
             "modified_clauses": modified,
             "summary_of_changes": f"Identified {len(added)} added clause(s), {len(removed)} removed clause(s), and {len(modified)} modified provision(s). 1 high-materiality risk flagged.",
         }
+
+    @staticmethod
+    def remediate_clause(
+        clause_type: str,
+        original_text: str,
+        risk_level: str = "HIGH",
+        negotiation_stance: str = "BALANCED",
+    ) -> dict[str, Any]:
+        """
+        Diagnoses legal exposure in high-risk contractual language and generates institutional
+        playbook redlines with fallback compromises and negotiation strategy.
+        """
+        clean_type = clause_type.lower()
+        clean_text = original_text.lower()
+
+        if "liability" in clean_type or "cap" in clean_type:
+            diagnosis = "The clause expands liability beyond customary bounds or introduces uncapped indemnity exceptions, exposing the company to existential damages beyond contract value."
+            playbook_rule = "Rule PB-LIAB-01: Aggregate liability must strictly not exceed 1x fees paid in preceding 12 months with mutual waiver of consequential damages."
+            redline = (
+                "Section 4.1 Limitation of Liability. Except for gross negligence or willful misconduct, "
+                "neither party's aggregate cumulative liability arising under or relating to this Agreement "
+                "shall exceed the total fees paid or payable by Client to Provider during the twelve (12) month "
+                "period immediately preceding the incident giving rise to liability. IN NO EVENT SHALL EITHER PARTY "
+                "BE LIABLE FOR ANY INDIRECT, SPECIAL, INCIDENTAL, PUNITIVE, OR CONSEQUENTIAL DAMAGES."
+            )
+            fallback = (
+                "Section 4.1 Limitation of Liability (Compromise Fallback). "
+                "Aggregate liability capped at two times (2x) the fees paid in the past 12 months, "
+                "with a separate super-cap of $1,000,000 strictly for third-party indemnification obligations."
+            )
+            rationale = "Counterparty cannot reasonably demand asymmetric liability without corresponding commercial upside. Capping aggregate exposure at 12 months fees reflects standard market terms (ABA Model Contract Guidelines)."
+
+        elif "indemnif" in clean_type or "defense" in clean_type:
+            diagnosis = "Unilateral indemnity obligations place defense costs and counterparty operational liabilities solely on our client without reciprocal protections."
+            playbook_rule = "Rule PB-IND-02: Indemnification must be bilateral, strictly limited to third-party claims, and conditioned upon prompt written notice and sole control of defense."
+            redline = (
+                "Section 3.1 Mutual Indemnification. Each party ('Indemnifying Party') agrees to defend, "
+                "indemnify, and hold harmless the other party, its officers, and employees against any third-party "
+                "claims, judgments, or reasonable legal defense fees arising solely out of the Indemnifying Party's "
+                "material breach of this Agreement, gross negligence, or infringement of intellectual property rights, "
+                "provided the indemnified party gives prompt written notice and control of defense."
+            )
+            fallback = (
+                "Mutual indemnification limited strictly to direct final court judgments, expressly excluding "
+                "counterparty attorney fees and internal settlement concessions without prior consent."
+            )
+            rationale = "Unilateral indemnities create moral hazard. Insist on reciprocity and ensure defense obligations are conditioned on prompt notice so we can control defense strategy and avoid inflated settlements."
+
+        elif "termination" in clean_type:
+            diagnosis = "The proposed clause allows unilateral termination without adequate cause or fails to provide an industry-standard 30-day notice and cure period."
+            playbook_rule = "Rule PB-TERM-03: Material breach termination requires minimum 30 calendar days notice and right to cure."
+            redline = (
+                "Section 1.2 Termination for Cause. Either party may terminate this Agreement only if the other "
+                "party materially breaches any provision herein and fails to cure such breach within thirty (30) "
+                "business days following receipt of detailed written notice specifying the breach."
+            )
+            fallback = (
+                "45-day cure period for technical or payment disputes, with automatic mediation prior to formal termination."
+            )
+            rationale = "Protects ongoing capital investment and prevents sudden termination leverage over minor operational friction."
+
+        else:
+            # General protective fallback
+            diagnosis = f"Non-standard wording in '{clause_type}' introduces ambiguities that may be construed against the drafting party in litigation."
+            playbook_rule = "Rule PB-GEN-04: Ensure explicit jurisdiction, bilateral covenants, and express exclusion of oral modifications."
+            redline = (
+                f"{original_text.strip()} All modifications hereto must be in writing and signed by authorized "
+                "representatives of both parties. The prevailing party in any dispute shall be entitled to reasonable legal costs."
+            )
+            fallback = "Standard bilateral arbitration under AAA Commercial Rules in a neutral forum."
+            rationale = "Ambiguous terms should be redlined to establish reciprocal rights and minimize forum shopping risks."
+
+        return {
+            "clause_type": clause_type,
+            "risk_diagnosis": diagnosis,
+            "proposed_redline": redline,
+            "fallback_option": fallback,
+            "negotiation_rationale": rationale,
+            "playbook_rule": playbook_rule,
+            "negotiation_stance": negotiation_stance,
+        }
+

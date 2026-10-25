@@ -120,6 +120,7 @@ Legal professionals (attorneys, corporate counsel, paralegals, and compliance of
   - Changed deadlines or financial obligations
   - Materiality classification (`LOW`, `MEDIUM`, `HIGH`)
 - **FR-025:** The system shall generate explainable risk indicators linking specific problematic clauses to identifiable legal risks (e.g., uncapped indemnity, unilateral termination, missing breach cure period).
+- **FR-041:** The system shall provide an automated Clause Risk Remediation & Negotiation Playbook engine that diagnoses clause-level liabilities and generates structured alternative language (Standard Preferred, Balanced Fallback, Aggressive Defense) with strategic negotiation rationale.
 
 ### Module E: Trust & Verification Engine
 - **FR-026:** The system shall perform deterministic Citation Resolution, verifying that every cited `chunk_id` and `document_id` exists in the database and belongs to the user's workspace.

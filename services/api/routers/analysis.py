@@ -68,3 +68,23 @@ async def compare_contracts(
         return await ContractIntelligence.compare_contracts(req.document_a_id, req.document_b_id, tenant.workspace_id, db)
     except ValueError as e:
         raise HTTPException(status_code=400, detail={"error_code": "COMPARISON_FAILED", "message": str(e)})
+
+
+class RemediateClauseRequest(BaseModel):
+    clause_type: str
+    original_text: str
+    risk_level: Optional[str] = "HIGH"
+    negotiation_stance: Optional[str] = "BALANCED"
+
+
+@router.post("/remediate-clause")
+async def remediate_clause(
+    req: RemediateClauseRequest,
+    tenant: TenantContext = Depends(get_tenant_context),
+):
+    return ContractIntelligence.remediate_clause(
+        clause_type=req.clause_type,
+        original_text=req.original_text,
+        risk_level=req.risk_level or "HIGH",
+        negotiation_stance=req.negotiation_stance or "BALANCED",
+    )

@@ -320,6 +320,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/CompareContractsResponse'
 
+  /analysis/remediate-clause:
+    post:
+      summary: Generate clause risk remediation and fallback redline language
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemediateClauseRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RemediateClauseResponse'
+
   # ================= TRUST & VERIFICATION =================
   /verification/check:
     post:
@@ -898,6 +914,38 @@ components:
                 enum: [LOW, MEDIUM, HIGH]
               risk_rationale:
                 type: string
+
+    RemediateClauseRequest:
+      type: object
+      required: [clause_type, original_text]
+      properties:
+        clause_type:
+          type: string
+        original_text:
+          type: string
+        risk_level:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+        negotiation_stance:
+          type: string
+          enum: [BALANCED, PROTECTIVE_CLIENT, AGGRESSIVE_DEFENSE]
+
+    RemediateClauseResponse:
+      type: object
+      required: [clause_type, risk_diagnosis, proposed_redline, fallback_option, negotiation_rationale, playbook_rule]
+      properties:
+        clause_type:
+          type: string
+        risk_diagnosis:
+          type: string
+        proposed_redline:
+          type: string
+        fallback_option:
+          type: string
+        negotiation_rationale:
+          type: string
+        playbook_rule:
+          type: string
 
     VerificationCheckRequest:
       type: object
