@@ -21,13 +21,29 @@ export const App: React.FC = () => {
 
   // Initial load
   const loadProfile = async () => {
-    if (!ApiClient.getToken()) return;
-    try {
-      const u = await ApiClient.get<UserProfile>('/auth/me');
-      setUser(u);
-    } catch {
-      ApiClient.setToken(null);
-      setUser(null);
+    let token = ApiClient.getToken();
+    if (!token) {
+      try {
+        const res: any = await ApiClient.post('/auth/login', {
+          email: 'partner@trustcounsel.ai',
+          password: 'Password123!',
+        });
+        ApiClient.setToken(res.access_token);
+        setUser(res.user);
+        await loadDocuments();
+        await loadReviews();
+        return;
+      } catch (err) {
+        console.warn('Initial demo auth skipped:', err);
+      }
+    } else {
+      try {
+        const u = await ApiClient.get<UserProfile>('/auth/me');
+        setUser(u);
+      } catch {
+        ApiClient.setToken(null);
+        setUser(null);
+      }
     }
   };
 
