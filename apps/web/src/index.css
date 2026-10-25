@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#070C18] text-slate-100 font-sans antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0B132B;
+}
+::-webkit-scrollbar-thumb {
+  background: #1C2541;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #324F8F;
+}
+
+.legal-card {
+  @apply bg-[#0D1527] border border-slate-800/80 rounded-xl shadow-xl backdrop-blur-sm transition-all;
+}
+
+.legal-card-hover {
+  @apply hover:border-amber-500/30 hover:shadow-amber-500/5 hover:-translate-y-0.5;
+}
+
+.badge-verified {
+  @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-950/70 text-emerald-400 border border-emerald-800/50;
+}
+
+.badge-unsupported {
+  @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-950/70 text-rose-400 border border-rose-800/50;
+}
+
+.badge-review {
+  @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-950/70 text-purple-400 border border-purple-800/50;
+}
+
+.badge-gold {
+  @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-950/60 text-amber-300 border border-amber-800/50;
+}
